@@ -1073,3 +1073,6 @@ cython_debug/
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml
+!/chromedriver.zip
+!/cdriver.exe
+!/chromedriver-win64/

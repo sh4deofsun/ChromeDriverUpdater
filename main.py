@@ -1,16 +1,41 @@
-# This is a sample Python script.
+import requests
+import json
+import zipfile
+import shutil
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+from robot.api import logger
+from robot.api.deco import library, keyword, not_keyword
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+@library(scope="SUITE", version="1.0", auto_keywords=False)
+class ChromeDriver:
+    ENDPOINT = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"
+    PLATFORM = "win64"
+    EXTRACT_FULL_PATH = "./cdriver.exe"
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    @not_keyword
+    def log_set(self, lvl: str, msg: str) -> None:
+        print(f"{lvl} : {msg}")
+        if lvl.upper() == "INFO":
+            logger.info(msg)
+        elif lvl.upper() == "WARN":
+            logger.warn(msg)
+
+    @keyword()
+    def update_chromedriver(self):
+        for i in json.loads(requests.get(self.ENDPOINT).text)["channels"]["Stable"]["downloads"]["chromedriver"]:
+            if i["platform"] == self.PLATFORM:
+                response = requests.get(url=i["url"], stream=True)
+                with open("chromedriver.zip", mode="wb") as file:
+                    file.write(response.content)
+                with zipfile.ZipFile("chromedriver.zip", mode="r") as archive:
+                    archive.printdir()
+                    archive.open("chromedriver-win64/chromedriver.exe")
+                    archive.extractall(".")
+                shutil.move("./chromedriver-win64/chromedriver.exe", self.EXTRACT_FULL_PATH)
+        self.log_set("info", "ChromeDriver updated.")
+
+
+if __name__ == "__main__":
+    C = ChromeDriver()
+    C.update_chromedriver()
